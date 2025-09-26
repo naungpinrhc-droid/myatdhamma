@@ -1,0 +1,551 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Couple Moments — Photo & Relationship Timeline</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<style>
+  /* -------------------------
+     Typography & base
+     ------------------------- */
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap');
+  :root{
+    --bg1:#0f1724;
+    --bg2:#071029;
+    --card:#0b1220;
+    --muted:#9aa4b2;
+    --accent:#ff758c;
+    --accent-2:#ffb07a;
+    --glass: rgba(255,255,255,0.04);
+    --radius:16px;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    margin:0;
+    font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,"Helvetica Neue",Arial;
+    background: linear-gradient(180deg,var(--bg1), var(--bg2));
+    color:#eaf3ff;
+    -webkit-font-smoothing:antialiased;
+    -moz-osx-font-smoothing:grayscale;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:20px;
+  }
+  /* container */
+  .app{
+    width:100%;
+    max-width:980px;
+    background: linear-gradient(180deg, rgba(255,255,255,0.02), transparent);
+    border-radius:20px;
+    padding:16px;
+    box-shadow: 0 10px 40px rgba(2,6,23,0.7);
+    display:grid;
+    grid-template-columns: 1fr;
+    gap:14px;
+  }
+
+  /* header - couple card */
+  .couple-card{
+    display:flex;
+    gap:12px;
+    align-items:center;
+    padding:14px;
+    border-radius:14px;
+    background: linear-gradient(90deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+    border: 1px solid rgba(255,255,255,0.03);
+  }
+  .avatars{
+    display:flex;
+    gap:10px;
+    align-items:center;
+  }
+  .avatar{
+    width:72px;height:72px;border-radius:18px;overflow:hidden;
+    flex-shrink:0;background:linear-gradient(135deg,var(--accent),var(--accent-2));
+    display:grid;place-items:center;font-weight:700;color:#fff;font-size:18px;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.5);
+    position:relative;
+  }
+  .avatar img{width:100%;height:100%;object-fit:cover;display:block}
+  .names{
+    display:flex;flex-direction:column;gap:6px;
+  }
+  .names .title{font-weight:700;font-size:16px;color:#fff}
+  .names .muted{font-size:13px;color:var(--muted)}
+
+  .stats{
+    margin-left:auto;
+    display:flex;
+    gap:12px;
+    align-items:center;
+  }
+  .stat{
+    background:linear-gradient(180deg, rgba(255,255,255,0.02), transparent);
+    padding:10px 12px;border-radius:12px;text-align:center;
+    min-width:110px;
+  }
+  .stat .n{font-weight:800;font-size:20px;color:var(--accent)}
+  .stat .lbl{font-size:12px;color:var(--muted)}
+
+  /* toolbar */
+  .toolbar{display:flex;gap:8px;align-items:center;padding:6px}
+  .btn{
+    background:var(--glass);border:1px solid rgba(255,255,255,0.03);
+    padding:10px 12px;border-radius:12px;color:#fff;font-weight:600;cursor:pointer;
+    transition:transform .12s ease, box-shadow .12s ease;
+  }
+  .btn.ghost{background:transparent;border:1px dashed rgba(255,255,255,0.04);color:var(--muted);font-weight:600}
+  .btn:active{transform:translateY(1px)}
+
+  /* gallery grid - mobile-first */
+  .gallery{
+    display:grid;
+    grid-template-columns: repeat(2, minmax(0,1fr));
+    gap:10px;
+  }
+  .tile{
+    background: linear-gradient(180deg, rgba(255,255,255,0.02), transparent);
+    border-radius:14px;overflow:hidden;position:relative;
+    min-height:120px;display:flex;flex-direction:column;
+    cursor:pointer;
+  }
+  .tile img{width:100%;height:160px;object-fit:cover;display:block}
+  .tile .meta{
+    padding:8px;font-size:13px;color:var(--muted);display:flex;align-items:center;gap:8px;
+  }
+  .chip{
+    font-size:12px;padding:6px 8px;border-radius:999px;background:rgba(0,0,0,0.25);color:#fff;
+  }
+
+  /* big combined row on larger screens */
+  @media (min-width:780px){
+    .app{grid-template-columns: 1fr 380px}
+    .gallery{grid-template-columns: repeat(2, minmax(0,1fr));gap:12px}
+    .side-panel{padding:12px;background:linear-gradient(180deg,rgba(255,255,255,0.02),transparent);border-radius:14px}
+  }
+
+  /* lightbox */
+  .lightbox{
+    position:fixed;inset:0;background:linear-gradient(rgba(0,0,0,0.6),rgba(0,0,0,0.85));display:none;
+    align-items:center;justify-content:center;z-index:80;padding:18px;
+  }
+  .lightbox.open{display:flex}
+  .lightbox-img{
+    max-width:100%;max-height:80vh;border-radius:12px;box-shadow:0 12px 40px rgba(2,6,23,0.8);
+  }
+  .lb-controls{position:fixed;bottom:26px;left:50%;transform:translateX(-50%);display:flex;gap:12px}
+  .icon-btn{background:linear-gradient(90deg,var(--accent),var(--accent-2));border:none;padding:10px;border-radius:12px;color:#fff;font-weight:700;cursor:pointer;box-shadow:0 8px 24px rgba(255,117,140,0.12)}
+
+  /* small helpers */
+  .muted{color:var(--muted)}
+  input[type="file"]{display:none}
+  .uploader{display:flex;gap:8px;align-items:center}
+  .small{font-size:13px}
+  .hr{height:1px;background:rgba(255,255,255,0.03);border-radius:2px;margin:8px 0}
+  .center{display:flex;align-items:center;justify-content:center}
+  .empty{padding:28px;text-align:center;color:var(--muted);border-radius:12px;background:rgba(255,255,255,0.01)}
+  .pill{padding:8px 12px;border-radius:999px;background:rgba(255,255,255,0.02);color:var(--muted);font-weight:600}
+  .controls-row{display:flex;gap:8px;flex-wrap:wrap}
+  .small-input{background:transparent;border:1px solid rgba(255,255,255,0.04);padding:8px;border-radius:10px;color:#fff}
+</style>
+</head>
+<body>
+  <div class="app" id="app">
+    <!-- Main column -->
+    <div>
+      <div class="couple-card" id="coupleCard">
+        <div class="avatars">
+          <div class="avatar" id="avatarA" title="Edit person A image"><img id="avatarAimg" src="" alt="" onerror="this.style.display='none'"><span id="avatarALetter"></span></div>
+          <div style="display:flex;flex-direction:column">
+            <div class="names">
+              <div class="title" id="nameA">Person A</div>
+              <div class="muted small">Tap to edit</div>
+            </div>
+          </div>
+          <div style="width:12px"></div>
+          <div class="avatar" id="avatarB" title="Edit person B image"><img id="avatarBimg" src="" alt="" onerror="this.style.display='none'"><span id="avatarBLetter"></span></div>
+          <div style="display:flex;flex-direction:column">
+            <div class="names">
+              <div class="title" id="nameB">Person B</div>
+              <div class="muted small">Tap to edit</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="stats" id="stats">
+          <div class="stat">
+            <div class="n" id="daysTogether">0</div>
+            <div class="lbl">Days together</div>
+          </div>
+          <div class="stat">
+            <div class="n" id="nextAnn">0d</div>
+            <div class="lbl">to next anniversary</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="toolbar">
+        <label class="btn">
+          <input id="fileInput" type="file" accept="image/*" multiple />
+          + Add Photos
+        </label>
+        <div class="btn ghost" id="toggleView">Toggle Joint / Separate</div>
+        <div class="btn ghost" id="exportBtn">Export JSON</div>
+        <div class="btn ghost" id="importBtn">Import JSON</div>
+        <input id="importFile" type="file" accept="application/json" style="display:none" />
+      </div>
+
+      <div class="hr"></div>
+
+      <div id="gallery" class="gallery" aria-live="polite"></div>
+
+      <div id="emptyView" class="empty" style="display:none">No photos yet — add your favorite moments 💕</div>
+    </div>
+
+    <!-- Side panel for settings & small gallery on wide screens -->
+    <div class="side-panel" style="display:none" id="sidePanel">
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <div><strong class="small">Relationship started</strong></div>
+        <input id="startDate" type="date" class="small-input" />
+        <div class="muted small">Enter the date you became a couple</div>
+
+        <div class="hr"></div>
+
+        <div><strong class="small">Names</strong></div>
+        <input id="inputA" class="small-input" placeholder="Person A name" />
+        <input id="inputB" class="small-input" placeholder="Person B name" />
+
+        <div class="hr"></div>
+
+        <div><strong class="small">Quick gallery</strong></div>
+        <div id="miniGallery"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Lightbox -->
+  <div class="lightbox" id="lightbox">
+    <img class="lightbox-img" id="lightboxImg" src="" alt="Large photo">
+    <div class="lb-controls">
+      <button class="icon-btn" id="prevBtn">⟨</button>
+      <button class="icon-btn" id="closeBtn">Close ✕</button>
+      <button class="icon-btn" id="nextBtn">⟩</button>
+    </div>
+  </div>
+
+<script>
+/* ============================
+   Client-side data + storage
+   ============================ */
+const LS_KEY = 'couple_moments_v1';
+let state = {
+  personA: {name: 'Person A', avatar: ''},
+  personB: {name: 'Person B', avatar: ''},
+  startDate: null, // yyyy-mm-dd
+  photos: [] // {id, src (dataURL), owner: 'A'|'B'|'J', title, timestamp}
+};
+let showMode = 'joint'; // 'joint' or 'separate' (separate shows persona chips)
+
+/* ---------- helpers ---------- */
+const $ = id => document.getElementById(id);
+const saveState = () => localStorage.setItem(LS_KEY, JSON.stringify(state));
+const loadState = () => {
+  try {
+    const raw = localStorage.getItem(LS_KEY);
+    if(raw) state = JSON.parse(raw);
+  } catch(e){ console.warn('load failed', e); }
+};
+const uid = () => 'p' + Math.random().toString(36).slice(2,10);
+
+/* ---------- init ---------- */
+loadState();
+renderAll();
+
+/* ---------- UI actions ---------- */
+
+// File upload (images)
+$('fileInput').addEventListener('change', async (e) => {
+  const files = Array.from(e.target.files || []);
+  if(!files.length) return;
+  for(const f of files){
+    if(!f.type.startsWith('image/')) continue;
+    const data = await readFileAsDataURL(f);
+    // default owner: Joint
+    const owner = prompt('Tag photo as (A / B / J for Joint). Default J:', 'J') || 'J';
+    const cleanOwner = (owner.trim().toUpperCase() === 'A' ? 'A' : (owner.trim().toUpperCase() === 'B' ? 'B' : 'J'));
+    state.photos.unshift({id: uid(), src: data, owner: cleanOwner, title: f.name, timestamp: Date.now()});
+  }
+  $('fileInput').value = '';
+  saveState(); renderAll();
+});
+
+function readFileAsDataURL(file){
+  return new Promise(res=>{
+    const r = new FileReader();
+    r.onload = ()=>res(r.result);
+    r.readAsDataURL(file);
+  });
+}
+
+// Toggle view between joint and separate
+$('toggleView').addEventListener('click', ()=>{
+  showMode = (showMode === 'joint' ? 'separate' : 'joint');
+  $('toggleView').textContent = showMode === 'joint' ? 'Toggle Joint / Separate' : 'Toggle Joint / Joint';
+  renderGallery();
+});
+
+// Export JSON
+$('exportBtn').addEventListener('click', ()=>{
+  const blob = new Blob([JSON.stringify(state, null, 2)], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = 'couple_moments_export.json';
+  document.body.appendChild(a); a.click(); a.remove();
+  URL.revokeObjectURL(url);
+});
+
+// Import JSON
+$('importBtn').addEventListener('click', ()=> $('importFile').click());
+$('importFile').addEventListener('change', async e=>{
+  const f = e.target.files[0]; if(!f) return;
+  try {
+    const txt = await f.text();
+    const parsed = JSON.parse(txt);
+    // naive merge/assign
+    state = parsed;
+    saveState(); renderAll();
+    alert('Imported successfully.');
+  } catch(err){ alert('Import failed: ' + err.message); }
+  e.target.value = '';
+});
+
+// edit names
+$('inputA')?.addEventListener('input', e => { state.personA.name = e.target.value; saveState(); renderNames(); });
+$('inputB')?.addEventListener('input', e => { state.personB.name = e.target.value; saveState(); renderNames(); });
+
+// start date change
+$('startDate')?.addEventListener('change', e => { state.startDate = e.target.value || null; saveState(); renderStats(); });
+
+// avatar click to change (A)
+$('avatarA').addEventListener('click', ()=> pickImageFor('A'));
+$('avatarB').addEventListener('click', ()=> pickImageFor('B'));
+
+function pickImageFor(person){
+  const inp = document.createElement('input');
+  inp.type = 'file'; inp.accept = 'image/*';
+  inp.onchange = async (ev) => {
+    const f = ev.target.files[0]; if(!f) return;
+    const d = await readFileAsDataURL(f);
+    if(person === 'A') { state.personA.avatar = d; }
+    else { state.personB.avatar = d; }
+    saveState(); renderAll();
+  };
+  inp.click();
+}
+
+/* ---------- gallery render ---------- */
+
+function renderAll(){
+  // populate side inputs if present
+  if($('inputA')) $('inputA').value = state.personA.name || '';
+  if($('inputB')) $('inputB').value = state.personB.name || '';
+  if($('startDate')) $('startDate').value = state.startDate || '';
+
+  renderNames();
+  renderStats();
+  renderGallery();
+  renderMiniGallery();
+  // hide side panel on small screens; show on wide
+  const sp = $('sidePanel'); if(sp) sp.style.display = window.innerWidth >= 780 ? 'block' : 'none';
+}
+
+function renderNames(){
+  $('nameA').textContent = state.personA.name || 'Person A';
+  $('nameB').textContent = state.personB.name || 'Person B';
+  // avatars
+  const aImg = $('avatarAimg'), bImg = $('avatarBimg'), aLetter = $('avatarALetter'), bLetter = $('avatarBLetter');
+  if(state.personA.avatar){ aImg.src = state.personA.avatar; aImg.style.display='block'; aLetter.style.display='none'; } else { aImg.style.display='none'; aLetter.style.display='block'; aLetter.textContent = (state.personA.name || 'A').slice(0,1).toUpperCase(); }
+  if(state.personB.avatar){ bImg.src = state.personB.avatar; bImg.style.display='block'; bLetter.style.display='none'; } else { bImg.style.display='none'; bLetter.style.display='block'; bLetter.textContent = (state.personB.name || 'B').slice(0,1).toUpperCase(); }
+}
+
+function renderStats(){
+  const daysEl = $('daysTogether'), nextEl = $('nextAnn');
+  if(!state.startDate){ daysEl.textContent = '—'; nextEl.textContent = '—'; return; }
+  const start = new Date(state.startDate + 'T00:00:00');
+  const now = new Date();
+  const diff = Math.floor((now - start) / (1000*60*60*24));
+  daysEl.textContent = (diff >= 0 ? diff : 0);
+  // calculate next anniversary (in days)
+  const thisYear = new Date(now.getFullYear(), start.getMonth(), start.getDate());
+  let next = thisYear;
+  if(thisYear < now) next = new Date(now.getFullYear()+1, start.getMonth(), start.getDate());
+  const daysTo = Math.ceil((next - now) / (1000*60*60*24));
+  nextEl.textContent = (daysTo === 0 ? 'Today!' : daysTo + 'd');
+}
+
+/* render mini gallery on side */
+function renderMiniGallery(){
+  const mg = $('miniGallery'); if(!mg) return;
+  mg.innerHTML = '';
+  (state.photos.slice(0,6) || []).forEach(p=>{
+    const img = document.createElement('img');
+    img.src = p.src; img.style.width='100%'; img.style.marginBottom='8px'; img.style.borderRadius='8px';
+    mg.appendChild(img);
+  });
+}
+
+/* render main gallery */
+function renderGallery(){
+  const el = $('gallery'); el.innerHTML = '';
+  if(!state.photos || state.photos.length === 0){
+    $('emptyView').style.display = 'block';
+    return;
+  } else $('emptyView').style.display = 'none';
+
+  // choose list based on showMode
+  let list = state.photos;
+  if(showMode === 'separate'){
+    // show grouped tiles: A on left, B on right (we'll interleave)
+    // but keep original order; show owner chip
+    list = state.photos;
+  }
+
+  list.forEach((p, idx) => {
+    const tile = document.createElement('div');
+    tile.className = 'tile';
+    tile.dataset.idx = idx;
+    tile.innerHTML = `
+      <img src="${p.src}" alt="${p.title || ''}">
+      <div class="meta"><span class="chip">${ownerLabel(p.owner)}</span><div style="flex:1"></div><span class="muted small">${timeAgo(p.timestamp)}</span></div>
+    `;
+    tile.addEventListener('click', ()=> openLightbox(idx));
+    el.appendChild(tile);
+  });
+}
+
+/* helpers for meta */
+function ownerLabel(o){
+  if(o === 'A') return state.personA.name || 'A';
+  if(o === 'B') return state.personB.name || 'B';
+  return 'Joint';
+}
+function timeAgo(ts){
+  if(!ts) return '';
+  const s = Math.floor((Date.now() - ts)/1000);
+  if(s < 60) return s + 's';
+  if(s < 3600) return Math.floor(s/60) + 'm';
+  if(s < 86400) return Math.floor(s/3600) + 'h';
+  return Math.floor(s/86400) + 'd';
+}
+
+/* ---------- lightbox ---------- */
+const lb = $('lightbox'), lbImg = $('lightboxImg');
+function openLightbox(startIdx){
+  let idx = startIdx;
+  // show a simple modal with navigation
+  function show(i){
+    const p = state.photos[i];
+    if(!p) return;
+    lbImg.src = p.src;
+    lb.dataset.index = i;
+    lb.classList.add('open');
+  }
+  show(idx);
+
+  // attach listeners
+  const onNext = () => {
+    idx = (idx + 1) % state.photos.length; show(idx);
+  };
+  const onPrev = () => {
+    idx = (idx - 1 + state.photos.length) % state.photos.length; show(idx);
+  };
+  const onClose = () => {
+    lb.classList.remove('open');
+    cleanup();
+  };
+  const onKey = e => {
+    if(e.key === 'ArrowRight') onNext();
+    if(e.key === 'ArrowLeft') onPrev();
+    if(e.key === 'Escape') onClose();
+  };
+  const touch = attachTouch(lb, onPrev, onNext);
+
+  $('nextBtn').onclick = onNext;
+  $('prevBtn').onclick = onPrev;
+  $('closeBtn').onclick = onClose;
+  document.addEventListener('keydown', onKey);
+  lb.onclick = (ev) => { if(ev.target === lb) onClose(); };
+
+  function cleanup(){
+    document.removeEventListener('keydown', onKey);
+    lb.onclick = null;
+    touch.detach();
+  }
+}
+
+/* simple touch swipe helper for LB */
+function attachTouch(node, onSwipeLeft, onSwipeRight){
+  let startX = null, startY = null, moved=false;
+  function down(e){
+    const t = e.touches ? e.touches[0] : e;
+    startX = t.clientX; startY = t.clientY; moved = false;
+  }
+  function move(e){
+    if(startX === null) return;
+    const t = e.touches ? e.touches[0] : e;
+    const dx = t.clientX - startX;
+    const dy = t.clientY - startY;
+    if(Math.abs(dx) > 20 && Math.abs(dx) > Math.abs(dy)){
+      moved = true;
+      if(dx < 0) onSwipeRight(); else onSwipeLeft();
+      startX = null;
+    }
+  }
+  function up(){ startX=null; }
+  node.addEventListener('touchstart', down);
+  node.addEventListener('touchmove', move);
+  node.addEventListener('touchend', up);
+  return { detach: ()=>{ node.removeEventListener('touchstart', down); node.removeEventListener('touchmove', move); node.removeEventListener('touchend', up); } };
+}
+
+/* ---------- small utilities ---------- */
+function timeToISO(d){ return new Date(d).toISOString().split('T')[0]; }
+
+/* save on unload */
+window.addEventListener('beforeunload', ()=> saveState());
+
+/* ---------- expose small debug helpers ---------- */
+window._state = state;
+window._save = saveState;
+
+/* optional: keyboard shortcuts */
+document.addEventListener('keydown', (e)=>{
+  if(e.key === 'g'){ document.querySelector('.btn')?.focus(); }
+});
+
+/* initially ensure date field present listener */
+(function ensureInputs(){
+  // If side inputs not present (mobile), add quick inline editing
+  if(!$('inputA')){
+    // quick inline edit on name click
+    $('nameA').addEventListener('click', ()=> {
+      const val = prompt('Edit name for Person A', state.personA.name || '');
+      if(val !== null){ state.personA.name = val; saveState(); renderAll(); }
+    });
+    $('nameB').addEventListener('click', ()=> {
+      const val = prompt('Edit name for Person B', state.personB.name || '');
+      if(val !== null){ state.personB.name = val; saveState(); renderAll(); }
+    });
+    // edit start date quick
+    $('daysTogether').addEventListener('click', ()=> {
+      const v = prompt('Set relationship start date (YYYY-MM-DD)', state.startDate || '');
+      if(v !== null){ state.startDate = v || null; saveState(); renderAll(); }
+    });
+  }
+})();
+</script>
+</body>
+</html>
