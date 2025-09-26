@@ -1,0 +1,13 @@
+{
+  "Family": [
+    { "src": "family/photo1.jpg", "title": "Picnic" },
+    { "src": "family/photo2.jpg", "title": "Grandpa" }
+  ],
+  "Vacation": [
+    { "src": "vacation/mountain.jpg", "title": "Mountain" },
+    { "src": "vacation/beach.jpg", "title": "Beach" }
+  ],
+  "Friends": [
+    { "src": "friends/party.jpg", "title": "Birthday Party" }
+  ]
+}
