@@ -3,115 +3,185 @@
 <head>
   <meta charset="UTF-8" />
   <title>Photo Album Gallery</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <style>
+    :root {
+      --primary: #1976d2;
+      --bg: #f5f5f5;
+      --text: #333;
+      --card-bg: #fff;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
-      font-family: Arial, sans-serif;
-      margin: 0; padding: 0;
-      display: flex; height: 100vh;
+      font-family: "Segoe UI", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
     }
-    aside {
-      width: 220px; background: #333; color: #fff;
-      padding: 20px; overflow-y: auto;
-    }
-    aside h2 { font-size: 18px; margin-bottom: 10px; }
-    aside ul { list-style: none; padding: 0; }
-    aside li {
-      padding: 8px; cursor: pointer;
-      border-radius: 4px;
-    }
-    aside li:hover { background: #555; }
+
+    /* Gallery grid */
     main {
-      flex: 1; padding: 20px; overflow-y: auto;
+      flex: 1;
+      padding: 12px;
+      overflow-y: auto;
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-      gap: 15px;
+      grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+      gap: 12px;
     }
     .photo {
-      border-radius: 8px;
+      background: var(--card-bg);
+      border-radius: 16px;
       overflow: hidden;
-      box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-      cursor: pointer;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
       transition: transform 0.2s;
+      cursor: pointer;
     }
-    .photo:hover { transform: scale(1.05); }
+    .photo:hover { transform: scale(1.03); }
     .photo img {
-      width: 100%; height: 150px;
-      object-fit: cover; display: block;
+      width: 100%; height: 140px; object-fit: cover; display: block;
     }
     .photo p {
-      margin: 0; padding: 8px;
-      background: #f8f8f8;
-      font-size: 14px; text-align: center;
+      padding: 8px;
+      font-size: 14px;
+      text-align: center;
     }
+
+    /* Bottom navigation (albums) */
+    nav {
+      background: #fff;
+      border-top: 1px solid #ddd;
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      padding: 8px 0;
+    }
+    nav button {
+      flex: 1;
+      padding: 10px;
+      font-size: 14px;
+      background: none;
+      border: none;
+      color: #666;
+      cursor: pointer;
+      transition: color 0.2s;
+    }
+    nav button.active {
+      color: var(--primary);
+      font-weight: bold;
+    }
+
     /* Lightbox */
     #lightbox {
-      position: fixed; inset: 0;
-      background: rgba(0,0,0,0.8);
-      display: none; justify-content: center; align-items: center;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.9);
+      display: none;
+      justify-content: center;
+      align-items: center;
+      flex-direction: column;
     }
     #lightbox img {
-      max-width: 90%; max-height: 80%;
-      border: 5px solid #fff; border-radius: 10px;
+      max-width: 90%; max-height: 75%;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.5);
     }
-    #lightbox:target { display: flex; }
+    #lightbox .controls {
+      margin-top: 12px;
+      display: flex; gap: 20px;
+    }
+    #lightbox button {
+      background: var(--primary);
+      border: none;
+      color: #fff;
+      padding: 10px 16px;
+      border-radius: 8px;
+      font-size: 16px;
+      cursor: pointer;
+    }
   </style>
 </head>
 <body>
-  <aside>
-    <h2>Albums</h2>
-    <ul id="albumList"></ul>
-  </aside>
   <main id="gallery"></main>
+  <nav id="albumNav"></nav>
 
   <div id="lightbox">
     <img id="lightboxImg" src="" alt="">
+    <div class="controls">
+      <button id="prevBtn">⟨ Prev</button>
+      <button id="closeBtn">Close ✕</button>
+      <button id="nextBtn">Next ⟩</button>
+    </div>
   </div>
 
   <script>
-    // Load albums.json
-    fetch('albums.json')
+    let albumsData = {};
+    let currentAlbum = "";
+    let currentIndex = 0;
+
+    fetch("albums.json")
       .then(res => res.json())
       .then(data => {
-        const albumList = document.getElementById('albumList');
-        const gallery = document.getElementById('gallery');
+        albumsData = data;
+        const nav = document.getElementById("albumNav");
+        const first = Object.keys(data)[0];
 
-        // List albums
-        Object.keys(data).forEach(albumName => {
-          const li = document.createElement('li');
-          li.textContent = albumName;
-          li.onclick = () => showAlbum(albumName, data[albumName]);
-          albumList.appendChild(li);
+        Object.keys(data).forEach((album, i) => {
+          const btn = document.createElement("button");
+          btn.textContent = album;
+          if (i === 0) { btn.classList.add("active"); currentAlbum = album; }
+          btn.onclick = () => {
+            document.querySelectorAll("nav button").forEach(b => b.classList.remove("active"));
+            btn.classList.add("active");
+            currentAlbum = album;
+            showAlbum(album);
+          };
+          nav.appendChild(btn);
         });
 
-        // Show first album by default
-        const first = Object.keys(data)[0];
-        if (first) showAlbum(first, data[first]);
-
-        // Display photos in gallery
-        function showAlbum(name, photos) {
-          gallery.innerHTML = '';
-          photos.forEach(photo => {
-            const div = document.createElement('div');
-            div.className = 'photo';
-            div.innerHTML = `
-              <img src="${photo.src}" alt="">
-              <p>${photo.title || ''}</p>
-            `;
-            div.onclick = () => openLightbox(photo.src);
-            gallery.appendChild(div);
-          });
-        }
-
-        // Lightbox
-        function openLightbox(src) {
-          document.getElementById('lightbox').style.display = 'flex';
-          document.getElementById('lightboxImg').src = src;
-        }
-
-        document.getElementById('lightbox').onclick = () => {
-          document.getElementById('lightbox').style.display = 'none';
-        };
+        if (first) showAlbum(first);
       });
+
+    function showAlbum(name) {
+      const gallery = document.getElementById("gallery");
+      gallery.innerHTML = "";
+      albumsData[name].forEach((photo, i) => {
+        const div = document.createElement("div");
+        div.className = "photo";
+        div.innerHTML = `
+          <img src="${photo.src}" alt="">
+          <p>${photo.title || ""}</p>
+        `;
+        div.onclick = () => openLightbox(name, i);
+        gallery.appendChild(div);
+      });
+    }
+
+    function openLightbox(album, index) {
+      currentAlbum = album;
+      currentIndex = index;
+      document.getElementById("lightbox").style.display = "flex";
+      document.getElementById("lightboxImg").src = albumsData[album][index].src;
+    }
+    function closeLightbox() {
+      document.getElementById("lightbox").style.display = "none";
+    }
+    function nextPhoto() {
+      currentIndex = (currentIndex + 1) % albumsData[currentAlbum].length;
+      document.getElementById("lightboxImg").src = albumsData[currentAlbum][currentIndex].src;
+    }
+    function prevPhoto() {
+      currentIndex = (currentIndex - 1 + albumsData[currentAlbum].length) % albumsData[currentAlbum].length;
+      document.getElementById("lightboxImg").src = albumsData[currentAlbum][currentIndex].src;
+    }
+
+    document.getElementById("closeBtn").onclick = closeLightbox;
+    document.getElementById("nextBtn").onclick = nextPhoto;
+    document.getElementById("prevBtn").onclick = prevPhoto;
+    document.getElementById("lightbox").onclick = e => {
+      if (e.target.id === "lightbox") closeLightbox();
+    };
   </script>
 </body>
 </html>
