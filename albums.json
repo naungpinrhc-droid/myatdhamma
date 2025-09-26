@@ -1,7 +1,7 @@
 {
   "Family": [
-    { "src": "family/photo1.jpg", "title": "Picnic" },
-    { "src": "family/photo2.jpg", "title": "Grandpa" }
+    { "src": "Test/photo1.jpg", "title": "Picnic" },
+    { "src": "Test/photo2.jpg", "title": "Grandpa" }
   ],
   "Vacation": [
     { "src": "vacation/mountain.jpg", "title": "Mountain" },
